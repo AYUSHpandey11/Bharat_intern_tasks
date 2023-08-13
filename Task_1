@@ -1,0 +1,39 @@
+# Forecasting the sales of a supermarket
+
+import sqlite3
+from statsmodels.tsa.seasonal import STL
+from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
+
+conn = sqlite3.connect('sales_data.db')
+query = "SELECT date, sales FROM sales"
+data = pd.read_sql_query(query, conn)
+
+conn.close()
+
+data['date'] = pd.to_datetime(data['date'])
+data.set_index('date', inplace=True)
+
+
+stl = STL(data['sales'], seasonal=13)  # Seasonal period of 13 days (roughly two weeks)
+result = stl.fit()
+
+trend = result.trend
+seasonal = result.seasonal
+residual = result.resid
+
+
+forecast = trend + seasonal
+
+mse = mean_squared_error(data['sales'], forecast)
+print(f"Mean Squared Error: {mse}")
+
+
+plt.figure(figsize=(12, 6))
+plt.plot(data['sales'], label='Actual Sales')
+plt.plot(forecast, label='Forecasted Sales')
+plt.xlabel('Date')
+plt.ylabel('Sales')
+plt.title('Sales Forecasting with STL')
+plt.legend()
+plt.show()
